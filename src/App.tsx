@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transacoes from './pages/Transacoes';
+import Metas from './pages/Metas';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="transacoes" element={<Transacoes />} />
+            <Route path="metas" element={<Metas />} />
           </Route>
         </Routes>
       </Router>

@@ -13,6 +13,7 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -32,6 +33,7 @@ export default function Login() {
     }
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       if (isSignUp) {
@@ -46,7 +48,7 @@ export default function Login() {
         if (data.session) {
           navigate('/');
         } else {
-          alert('Conta criada com sucesso! Verifique seu e-mail para confirmar o cadastro, ou faça login se a confirmação não for necessária.');
+          setSuccess('Conta criada com sucesso! Verifique seu e-mail para confirmar o cadastro, ou faça login se a confirmação não for necessária.');
           setIsSignUp(false);
           setPassword('');
           setConfirmPassword('');
@@ -118,6 +120,11 @@ export default function Login() {
             {error && (
               <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-lg text-sm font-medium">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-lg text-sm font-medium">
+                {success}
               </div>
             )}
             <div>

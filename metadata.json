@@ -1,5 +1,8 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": []
+  "name": "FinDash",
+  "description": "Aplicativo de gestão financeira com bloqueio biométrico.",
+  "requestFramePermissions": [
+    "publickey-credentials-get",
+    "publickey-credentials-create"
+  ]
 }

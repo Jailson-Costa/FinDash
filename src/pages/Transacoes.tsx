@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, Transacao, Categoria } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
-import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Edit2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Edit2, ChevronLeft, ChevronRight, Search, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, getDay, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,6 +25,8 @@ export default function Transacoes() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form state
   const [descricao, setDescricao] = useState('');
@@ -100,6 +102,7 @@ export default function Transacoes() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     if (!user) return;
 
     try {
@@ -136,7 +139,7 @@ export default function Transacoes() {
       }
 
       if (!categoriaFinal) {
-        alert('Por favor, selecione ou crie uma categoria.');
+        setErrorMsg('Por favor, selecione ou crie uma categoria.');
         return;
       }
 
@@ -163,7 +166,7 @@ export default function Transacoes() {
       resetForm();
     } catch (error) {
       console.error('Error adding transacao:', error);
-      alert('Erro ao adicionar transação.');
+      setErrorMsg('Erro ao adicionar transação.');
     }
   };
 
@@ -178,16 +181,23 @@ export default function Transacoes() {
     setTipo('pessoal');
     setNatureza('gasto');
     setNota('');
+    setErrorMsg(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este lançamento?')) return;
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      const { error } = await supabase.from('transacoes').delete().eq('id', id);
+      const { error } = await supabase.from('transacoes').delete().eq('id', itemToDelete);
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting transacao:', error);
-      alert('Erro ao excluir lançamento.');
+      // Could set a global error state here if needed
+    } finally {
+      setItemToDelete(null);
     }
   };
 
@@ -202,6 +212,7 @@ export default function Transacoes() {
     setNota(t.nota || '');
     setIsAddingCategoria(false);
     setNovaCategoria('');
+    setErrorMsg(null);
     setIsModalOpen(true);
   };
 
@@ -538,6 +549,14 @@ export default function Transacoes() {
                 <h3 className="text-xl font-semibold leading-6 text-slate-800 mb-6">
                   {editingId ? 'Editar Lançamento' : 'Novo Lançamento'}
                 </h3>
+
+                {errorMsg && (
+                  <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                    {errorMsg}
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                   
                   <div className="flex space-x-6 mb-4">
@@ -681,6 +700,69 @@ export default function Transacoes() {
                 </form>
               </div>
             </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <motion.div 
+            key="delete-modal"
+            className="fixed inset-0 z-50 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setItemToDelete(null)}
+          >
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+              </div>
+
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+              <motion.div 
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-100"
+              >
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-rose-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <AlertCircle className="h-6 w-6 text-rose-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-medium text-slate-900">
+                        Excluir Lançamento
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-slate-500">
+                          Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={confirmDelete}
+                    className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-rose-600 text-base font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                  >
+                    Excluir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setItemToDelete(null)}
+                    className="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
